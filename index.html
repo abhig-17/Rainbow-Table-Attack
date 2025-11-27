@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Rainbow Table Attack</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="container nav-inner">
+      <div class="brand"><span class="lock">🔐</span> Rainbow Table Attack</div>
+      <div class="menu" id="menu">
+        <a href="#home" class="active">Home</a>
+        <a href="#theory">Theory</a>
+        <a href="#procedure">Procedure</a>
+        <a href="#simulation">Simulation</a>
+        <a href="#code">Code</a>
+        <a href="#conclusion">Conclusion</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <header id="home" class="hero">
+    <div class="container">
+      <h1 class="title">Rainbow Table Attack</h1>
+      <p class="subtitle">Learn how rainbow table attacks work and understand password security vulnerabilities. Explore the theory, implementation procedure, an interactive mini-simulation, and simple code examples. For learning &amp; awareness only.</p>
+
+      <div class="card-grid">
+        <a class="card" href="#theory">
+          <h3>🧩 Theory</h3>
+          <p>What rainbow tables are, why they’re effective, and the role of hashing and reduction functions.</p>
+        </a>
+        <a class="card" href="#procedure">
+          <h3>🛠️ Procedure</h3>
+          <p>Step-by-step overview of creating and using a rainbow table against unsalted hashes.</p>
+        </a>
+        <a class="card" href="#simulation">
+          <h3>⚡ Simulation</h3>
+          <p>Interactive demo that precomputes a tiny table and attempts to crack a given hash.</p>
+        </a>
+      </div>
+
+      <div class="badge">💡 <strong>Security Note</strong>: This educational site demonstrates attack concepts. Always use strong, unique passwords and hashing algorithms with salt and key stretching (e.g., bcrypt, scrypt, Argon2).</div>
+    </div>
+  </header>
+
+  <!-- Theory -->
+  <section id="theory">
+    <div class="container">
+      <h2 class="section-title">Rainbow Table Theory</h2>
+
+      <div class="panel">
+        <h3>What is a Rainbow Table?</h3>
+        <p class="subtitle">A precomputed table for cracking password hashes. Instead of hashing every guess, it looks up hashes that were pre-calculated and stored, making password cracking much faster.</p>
+      </div>
+
+      <div class="panel">
+        <h3>Key Concepts</h3>
+        <ul class="list-clean">
+          <li><b>Hash:</b> One-way function (e.g., SHA-256, MD5) that converts a password to a fixed hex string.</li>
+          <li><b>Reduction:</b> Converts a hash back to a password-like candidate.</li>
+          <li><b>Chain:</b> Alternates hash → reduce → hash → reduce… to build lookup tables.</li>
+          <li><b>Salt:</b> Random data added before hashing to break rainbow tables.</li>
+        </ul>
+      </div>
+
+      <div class="panel">
+        <h3>How It Works</h3>
+        <ol class="muted-list">
+          <li>Build chains: password → hash → reduce → hash → reduce…</li>
+          <li>Store only chain start and end points (saves memory).</li>
+          <li>Given target hash, apply reduction and search the table.</li>
+          <li>If match found, backtrack chain to recover original password.</li>
+        </ol>
+      </div>
+
+      <div class="panel two-col">
+        <div>
+          <strong class="why">Why Effective:</strong>
+          <p class="subtitle">Much faster than brute force; trades storage for computation.</p>
+        </div>
+        <div>
+          <strong class="why">How to Stop It:</strong>
+          <p class="subtitle">Use salts + slow hashes (bcrypt, Argon2, scrypt) and enable MFA/2FA.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Procedure -->
+  <section id="procedure">
+    <div class="container">
+      <h2 class="section-title">Implementation Steps</h2>
+
+      <div class="panel">
+        <h3>1. Create Hash Function</h3>
+        <p class="subtitle">Converts a password to its fixed-length hexadecimal representation using a one-way hashing algorithm.</p>
+        <code>password → SHA-256 hash (hex string)</code>
+      </div>
+
+      <div class="panel">
+        <h3>2. Create Reduction Function</h3>
+        <p class="subtitle">Transforms a hash back into a password-like candidate by mapping bytes to a defined charset.</p>
+        <code>hex hash → take bytes → map to charset → password candidate</code>
+      </div>
+
+      <div class="panel">
+        <h3>3. Build Chains</h3>
+        <p class="subtitle">Each chain starts from a password, repeatedly applies hashing and reduction functions, and stores only the start and end points for efficiency.</p>
+        <code>password → hash → reduce → hash → reduce (repeat n times)</code>
+      </div>
+
+      <div class="panel">
+        <h3>4. Crack Hash</h3>
+        <p class="subtitle">Given a target hash, iteratively reduce and look it up in the rainbow table. If a match is found, regenerate the chain to recover the original password.</p>
+        <code>target hash → reduce → lookup → match → recover password</code>
+      </div>
+
+      <div class="panel">
+        <h3>Performance</h3>
+        <p class="subtitle">Rainbow tables drastically reduce cracking time by precomputing hashes, trading off storage space for speed. They are highly optimized compared to brute-force methods.</p>
+        <code>Build: O(n × m) | Crack: O(m)</code>
+      </div>
+    </div>
+  </section>
+
+  <!-- Simulation -->
+  <section id="simulation">
+    <div class="container">
+      <h2 class="section-title">Interactive Simulation</h2>
+
+      <div class="panel">
+        <h3>Step 1: Build Rainbow Table</h3>
+        <p class="subtitle">Create a precomputed table that maps password hashes to original passwords.</p>
+        <button id="build-btn" class="btn pill">Build Table</button>
+        <div class="panel status-panel"><span id="build-status" class="muted">—</span></div>
+      </div>
+
+      <div class="panel">
+        <h3>Step 2: Generate Test Hash</h3>
+        <p class="subtitle">Click a password to generate its hash:</p>
+        <div id="sample-wrap" class="sample-wrap"></div>
+      </div>
+
+      <div class="panel">
+        <h3>Step 3: Crack the Password</h3>
+        <p class="subtitle">Enter a hash or select from above, then look it up in the rainbow table:</p>
+        <div class="crack-row">
+          <input id="hash-input" class="input" placeholder="Enter hash manually (40 hex characters)" />
+          <button class="btn primary" id="crack-btn">Set Hash</button>
+        </div>
+        <div class="panel result-panel"><strong id="crack-out"></strong></div>
+      </div>
+
+      <div class="panel dashed">
+        <span>💡 <strong>How it works:</strong> A rainbow table is a precomputed database of hashes. Instead of trying millions of passwords, we instantly look up the hash to find the match. Real tables contain billions of hashes for faster password cracking.</span>
+      </div>
+
+      <div class="panel">
+        <strong>Table Preview</strong>
+        <div id="table-wrap" class="table-wrap">
+          <table id="rt-table">
+            <thead><tr><th>Start Password</th><th>SHA-256 Hash</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Code Demo -->
+  <section id="code">
+    <div class="container">
+      <h2 class="section-title">Core Code</h2>
+
+      <div class="panel">
+        <h3>Reference Implementation (Python)</h3>
+        <p class="subtitle">This script builds a small rainbow table with position-dependent reduction, then attempts to crack a target hash. It is for education only.</p>
+<pre><code class="language-python"><b>#Generate Test Hash</b> 
+
+import hashlib
+
+def hash_password(password):
+    return hashlib.sha256(
+        password.encode()
+    ).hexdigest()
+
+
+<b>#Crack the Password</b>
+
+
+def crack_hash(target_hash, rainbow_table):
+    for password, hash_value in rainbow_table.items():
+        if hash_value == target_hash:
+            return password
+    return "Not found"
+
+
+</code></pre>
+      </div>
+
+    </div>
+  </section>
+   <section id="conclusion">
+<div class="container">
+<h2 class="section-title">Conclusion</h2>
+<div class="panel">
+<h3>Summary & Recommendations</h3>
+ <p class="subtitle" id="conclusion-text">
+        Rainbow table attacks demonstrate how easily weak and unsalted password hashes can be reversed using precomputed lookup tables. To protect systems, always store passwords with unique per-user salts and a slow, memory-hard hashing algorithm (for example bcrypt, scrypt, or Argon2). Enforce strong password policies, enable multi-factor authentication, and monitor for suspicious activity — these measures together greatly reduce the risk of hash-based attacks and strengthen overall password security.
+      </p>
+
+      <!-- optional: copy button (keeps same look as your other buttons) -->
+    
+</div>
+
+</div>
+</section>
+
+
+  <footer>
+    <div class="container">© <span id="year"></span> Rainbow Table Attack – Educational use only.</div>
+  </footer>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
