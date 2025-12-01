@@ -3,23 +3,22 @@ import hashlib
 import time
 import pandas as pd
 
-# --- 1. Core Logic Functions (Adapted from script.js) ---
+# --- 1. Core Logic Functions (SHA-1 Hashing and Reduction) ---
 
-# Dictionary for the demo table
+# Dictionary for the demo table, matching script.js
 DEMO_DICT = [
     'helloworld', 'admin123', 'letmein', 'welcome', 'master', 'sunshine', 'dragon', 'monkey'
 ]
 
 def hash_password_sha1(password):
-    """Hashes a password using SHA-1 (used in the simulation for simplicity/speed)."""
-    # Matches the original JavaScript implementation's choice of SHA-1
+    """Hashes a password using SHA-1 (40 hex chars)."""
     return hashlib.sha1(password.encode()).hexdigest()
 
 def reduce_to_word(hash_hex, dictionary):
-    """Tiny reduction function: maps hash to a word from the dictionary."""
+    """Reduction function: maps hash to a word from the dictionary (matching script.js)."""
     n = len(dictionary)
     sum_val = 0
-    # Process the hash by taking hex pairs and summing their integer values
+    # Sum up the integer values of every two hex characters
     for i in range(0, len(hash_hex), 2):
         try:
             sum_val += int(hash_hex[i:i + 2], 16)
@@ -28,36 +27,24 @@ def reduce_to_word(hash_hex, dictionary):
     return dictionary[sum_val % n]
 
 def build_rainbow_table(dictionary):
-    """Builds the in-memory rainbow table (SHA-1)."""
+    """Builds the in-memory rainbow table (start word -> SHA-1 hash endpoint)."""
     table = []
     for word in dictionary:
         h = hash_password_sha1(word)
-        table.append({'start': word, 'hash': h})
+        table.append({'Start Password': word, 'SHA-1 Hash': h})
     return table
 
 def crack_hash(target_hash, rainbow_table, dictionary):
     """Attempts to crack the hash using direct lookup and 1-step reduction."""
     target_hash = target_hash.lower().strip()
     
-    # 1. Direct Lookup
+    # 1. Direct Lookup (Hash is found as an endpoint)
     for row in rainbow_table:
-        if row['hash'] == target_hash:
-            return {'found': True, 'password': row['start'], 'method': 'Direct lookup'}
+        if row['SHA-1 Hash'] == target_hash:
+            return {'found': True, 'password': row['Start Password'], 'method': 'Direct lookup'}
 
-    # 2. 1-Step Reduction Check
-    try:
-        # Perform the reduction as the first step of a potential chain
-        reduced_word = reduce_to_word(target_hash, dictionary)
-        h2 = hash_password_sha1(reduced_word)
-        
-        # Check if this computed hash (h2) is an endpoint in the table
-        for row in rainbow_table:
-            if row['hash'] == h2:
-                # If h2 matches an endpoint, the original password (row['start']) is the crack
-                return {'found': True, 'password': row['start'], 'method': '1-step reduction/Backtracking'}
-    except Exception:
-        pass
-        
+    # No reduction/backtracking: only direct lookup is used for this demo.
+    # This ensures that entering an incorrect/unknown hash returns 'not found'.
     return {'found': False}
 
 
@@ -69,50 +56,68 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Custom CSS for styling the sections (mimicking styles.css)
+# Custom CSS for high visual fidelity, matching styles.css colors and structure
 st.markdown("""
 <style>
-/* Main body colors */
-.stApp {
-    background-color: #0b0f1a;
-    color: #e5e7eb;
+/* --- Color Variables from styles.css --- */
+:root {
+    --bg: #0b0f1a;
+    --panel: #111827;
+    --panel-2: #0f172a;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+    --accent: #3b82f6;
+    --accent-2: #8b5cf6;
+    --success: #22c55e;
+    --danger: #ef4444;
 }
-/* Title and Section Titles */
-.title {
-    color: #1e90ff;
-    font-size: 3.5rem;
-    font-weight: 800;
+
+/* --- General Styling --- */
+.stApp { background-color: var(--bg); color: var(--text); }
+
+/* --- Headings (Matching color and weight) --- */
+h1.hero-title {
+    /* Gradient-filled headline for stronger visual impact */
+    background: linear-gradient(90deg, #60a5fa 0%, #8b5cf6 50%, #f472b6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    font-size: clamp(48px, 7vw, 96px);
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    line-height: 1.02;
+    margin-bottom: 12px;
+    text-shadow: 0 6px 18px rgba(59,130,246,0.12), 0 2px 6px rgba(0,0,0,0.6);
+    filter: drop-shadow(0 10px 30px rgba(139,92,246,0.06));
 }
-.section-title {
+h2.section-title {
     color: #1e90ff;
-    font-size: 2.75rem;
+    font-size: 44px;
     font-weight: 800;
     margin-top: 40px;
-    margin-bottom: 10px;
 }
-/* Subtitle/Muted text */
-.subtitle, .stMarkdown p {
-    color: #9ca3af;
-    max-width: 900px;
-}
-/* Card-like panels (using st.container + custom CSS) */
+.subtitle, .stMarkdown p { color: var(--muted); max-width: 900px; }
+
+/* --- Panel & Card Styling --- */
 .stContainer {
+    background: var(--panel);
     border: 1px solid rgba(255,255,255,.08);
     border-radius: 14px;
     padding: 18px;
     margin-bottom: 16px;
-    background: #111827;
 }
-/* Card Grid mimic */
 .card-style {
-    background: linear-gradient(180deg, #111827 0%, #0f172a 100%);
+    background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
     border: 1px solid rgba(255,255,255,.08);
     border-radius: 16px;
     padding: 26px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.35); /* Mimic var(--shadow) */
     height: 100%;
 }
-.card-style h3 { color: #60a5fa; }
-/* Badge mimic */
+.card-style h3 { margin: 0 0 6px; color: #e5e7eb; }
+.card-style p { margin: 0; }
+
+/* --- Badge Styling --- */
 .badge-style {
     display: inline-flex;
     align-items: center;
@@ -126,44 +131,111 @@ st.markdown("""
     margin-top: 20px;
     margin-bottom: 20px;
 }
-/* List styling for Key Concepts */
-ul { padding-left: 20px; }
-ul b { color: #60a5fa; }
+
+/* --- Button Styling (Matching btn, btn.primary, btn.pill, btn.tag) --- */
+.stButton>button { border-radius: 12px; }
+.stButton>button[kind="primary"] {
+    background: linear-gradient(180deg, var(--accent), #2563eb);
+    color: #081226;
+    font-weight: 700;
+    border: none;
+}
+.pill-btn>button {
+    background: linear-gradient(180deg, var(--accent-2), #6d28d9);
+    color: white;
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-weight: 700;
+    border: none;
+}
+.tag-btn>button {
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #1f2937,#111827);
+    border: 1px solid rgba(255,255,255,.1);
+}
+
+/* --- Utility/Text Styles --- */
+.list-clean b { color: #60a5fa; }
+code, pre { background: #0b1222; border: 1px solid rgba(255,255,255,.08); padding: 2px 6px; border-radius: 6px; }
+pre { padding: 14px; overflow: auto; }
 </style>
 """, unsafe_allow_html=True)
 
 
-# Initialize session state for the table and status
+# --- Initialize Session State ---
 if 'rainbow_table' not in st.session_state:
     st.session_state.rainbow_table = None
 if 'build_status' not in st.session_state:
     st.session_state.build_status = "—"
 if 'target_hash' not in st.session_state:
     st.session_state.target_hash = ""
+if 'crack_result' not in st.session_state:
+    st.session_state.crack_result = None
 
-
-# --- Callbacks for button actions ---
-
+# --- Callbacks ---
 def set_hash(hash_value):
     """Callback to set the target hash in session state."""
     st.session_state.target_hash = hash_value
+    st.session_state.crack_result = None # Clear result when hash changes
 
 def build_table_callback():
     """Callback to build the table."""
-    with st.spinner('Building table…'):
+    with st.spinner('Building…'):
         time.sleep(1) # Simulate computation time
         st.session_state.rainbow_table = build_rainbow_table(DEMO_DICT)
         st.session_state.build_status = f"✓ Rainbow table built with {len(st.session_state.rainbow_table)} precomputed hashes"
+        st.session_state.crack_result = None # Clear result
 
-# --- UI Layout ---
+def crack_callback():
+    """Callback to handle the cracking process."""
+    h = st.session_state.hash_input_field.strip()
+    
+    if not h:
+        st.session_state.crack_result = {'found': False, 'message': 'Please enter or generate a hash first.', 'style': 'info'}
+        return
+    
+    st.session_state.target_hash = h # Update target hash from input field
+    
+    if st.session_state.rainbow_table is None:
+        st.session_state.crack_result = {'found': False, 'message': 'Please build the table first.', 'style': 'error'}
+        return
+        
+    # Show "Working" message briefly
+    with st.spinner('Working…'):
+        time.sleep(0.5)
+        result = crack_hash(
+            st.session_state.target_hash, 
+            st.session_state.rainbow_table, 
+            DEMO_DICT
+        )
+    
+    # Store final result
+    if result['found']:
+        st.session_state.crack_result = {
+            'found': True, 
+            'message': f"Password: {result['password']} ({result['method']})",
+            'style': 'success'
+        }
+    else:
+        st.session_state.crack_result = {
+            'found': False, 
+            'message': 'Not found in demo table.',
+            'style': 'error'
+        }
 
-# Mimic the Nav/Menu by creating an anchor map (Streamlit has no direct anchor support)
-st.markdown("## 🔐 Rainbow Table Attack", unsafe_allow_html=True)
-st.divider()
+
+# --- 3. UI Layout (Sections) ---
+
+# Nav/Brand Mimic
+# We use a header and markdown to simulate the sticky brand element
+st.markdown('<div class="nav-inner" style="position: sticky; top: 0; z-index: 50; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,.06); background-color: var(--bg); backdrop-filter: saturate(1.2) blur(8px);"><div class="brand"><span class="lock" style="display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: var(--panel); border: 1px solid rgba(255,255,255,.08);">🔐</span> Rainbow Table Attack</div></div>', unsafe_allow_html=True)
+
 
 # ----------------- HOME/HERO SECTION -----------------
-st.markdown('<a name="home"></a>', unsafe_allow_html=True)
-st.markdown('<p class="title">Rainbow Table Attack</p>', unsafe_allow_html=True)
+st.markdown('<a id="home"></a>', unsafe_allow_html=True)
+st.markdown('<div style="padding: 40px 0;">', unsafe_allow_html=True) # Mimic hero padding
+st.markdown('<h1 class="hero-title">Rainbow Table Attack</h1>', unsafe_allow_html=True)
 st.markdown(
     """
     <p class="subtitle">Learn how rainbow table attacks work and understand password security vulnerabilities. 
@@ -175,35 +247,20 @@ st.markdown(
 # Card Grid (Mimic)
 col1, col2, col3 = st.columns(3)
 with col1:
-    with st.container():
-        st.markdown(
-            """
-            <div class="card-style">
-                <h3>🧩 Theory</h3>
-                <p>What rainbow tables are, why they’re effective, and the role of hashing and reduction functions.</p>
-            </div>
-            """, unsafe_allow_html=True
-        )
+    st.markdown(
+        """<div class="card-style"><h3>🧩 Theory</h3><p>What rainbow tables are, why they’re effective, and the role of hashing and reduction functions.</p></div>""", 
+        unsafe_allow_html=True
+    )
 with col2:
-    with st.container():
-        st.markdown(
-            """
-            <div class="card-style">
-                <h3>🛠️ Procedure</h3>
-                <p>Step-by-step overview of creating and using a rainbow table against unsalted hashes.</p>
-            </div>
-            """, unsafe_allow_html=True
-        )
+    st.markdown(
+        """<div class="card-style"><h3>🛠️ Procedure</h3><p>Step-by-step overview of creating and using a rainbow table against unsalted hashes.</p></div>""", 
+        unsafe_allow_html=True
+    )
 with col3:
-    with st.container():
-        st.markdown(
-            """
-            <div class="card-style">
-                <h3>⚡ Simulation</h3>
-                <p>Interactive demo that precomputes a tiny table and attempts to crack a given hash.</p>
-            </div>
-            """, unsafe_allow_html=True
-        )
+    st.markdown(
+        """<div class="card-style"><h3>⚡ Simulation</h3><p>Interactive demo that precomputes a tiny table and attempts to crack a given hash.</p></div>""", 
+        unsafe_allow_html=True
+    )
 
 # Badge (Mimic)
 st.markdown(
@@ -213,13 +270,14 @@ st.markdown(
     </div>
     """, unsafe_allow_html=True
 )
+st.markdown('</div>', unsafe_allow_html=True) # Close hero padding div
+st.markdown('<hr style="border-top: 1px solid rgba(255,255,255,.06); margin: 0;">', unsafe_allow_html=True) # Separator
 
-st.divider()
 
 # ----------------- THEORY SECTION -----------------
-st.markdown('<a name="theory"></a>', unsafe_allow_html=True)
-st.markdown('<p class="section-title">Rainbow Table Theory</p>', unsafe_allow_html=True)
-
+st.markdown('<a id="theory"></a>', unsafe_allow_html=True)
+st.markdown('<div style="padding: 64px 0;">', unsafe_allow_html=True) # Mimic section padding
+st.markdown('<h2 class="section-title">Rainbow Table Theory</h2>', unsafe_allow_html=True)
 
 # Panel 1
 with st.container():
@@ -262,18 +320,20 @@ with st.container():
 col_why, col_stop = st.columns(2)
 with col_why:
     with st.container():
-        st.markdown('<strong class="why">Why Effective:</strong>', unsafe_allow_html=True)
+        st.markdown('<strong>Why Effective:</strong>', unsafe_allow_html=True)
         st.markdown('<p class="subtitle">Much faster than brute force; trades storage for computation.</p>', unsafe_allow_html=True)
 with col_stop:
     with st.container():
-        st.markdown('<strong class="why">How to Stop It:</strong>', unsafe_allow_html=True)
+        st.markdown('<strong>How to Stop It:</strong>', unsafe_allow_html=True)
         st.markdown('<p class="subtitle">Use salts + slow hashes (bcrypt, Argon2, scrypt) and enable MFA/2FA.</p>', unsafe_allow_html=True)
 
-st.divider()
+st.markdown('</div>', unsafe_allow_html=True) # Close section padding div
+st.markdown('<hr style="border-top: 1px solid rgba(255,255,255,.06); margin: 0;">', unsafe_allow_html=True) # Separator
 
 # ----------------- PROCEDURE SECTION -----------------
-st.markdown('<a name="procedure"></a>', unsafe_allow_html=True)
-st.markdown('<p class="section-title">Implementation Steps</p>', unsafe_allow_html=True)
+st.markdown('<a id="procedure"></a>', unsafe_allow_html=True)
+st.markdown('<div style="padding: 64px 0;">', unsafe_allow_html=True) # Mimic section padding
+st.markdown('<h2 class="section-title">Implementation Steps</h2>', unsafe_allow_html=True)
 
 # Panel 1
 with st.container():
@@ -325,103 +385,108 @@ with st.container():
         """, unsafe_allow_html=True
     )
 
-st.divider()
+st.markdown('</div>', unsafe_allow_html=True) # Close section padding div
+st.markdown('<hr style="border-top: 1px solid rgba(255,255,255,.06); margin: 0;">', unsafe_allow_html=True) # Separator
+
 
 # ----------------- SIMULATION SECTION -----------------
-st.markdown('<a name="simulation"></a>', unsafe_allow_html=True)
-st.markdown('<p class="section-title">Interactive Simulation</p>', unsafe_allow_html=True)
+st.markdown('<a id="simulation"></a>', unsafe_allow_html=True)
+st.markdown('<div style="padding: 64px 0;">', unsafe_allow_html=True) # Mimic section padding
+st.markdown('<h2 class="section-title">Interactive Simulation</h2>', unsafe_allow_html=True)
 
 # Panel 1: Build Table
 with st.container():
     st.subheader("Step 1: Build Rainbow Table")
     st.markdown("<p class='subtitle'>Create a precomputed table that maps password hashes to original passwords.</p>", unsafe_allow_html=True)
     
+    st.markdown('<div class="pill-btn">', unsafe_allow_html=True)
     st.button(
-        label="Build Table (SHA-1)", 
-        key="build_btn",
+        label="Build Table", 
+        key="build_btn_key",
         on_click=build_table_callback, 
         disabled=(st.session_state.rainbow_table is not None)
     )
-    st.info(f"Status: {st.session_state.build_status}")
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.markdown(f'<div class="panel status-panel"><span id="build-status" style="color:var(--muted);">{st.session_state.build_status}</span></div>', unsafe_allow_html=True)
 
-# Panel 2: Generate Test Hash
-if st.session_state.rainbow_table:
+
+# Conditional Panels (Step 2 and 3 require the table to be built)
+if st.session_state.rainbow_table is not None:
+    
+    # Panel 2: Generate Test Hash
     with st.container():
         st.subheader("Step 2: Generate Test Hash")
         st.markdown("<p class='subtitle'>Click a password to generate its hash:</p>", unsafe_allow_html=True)
         
-        # Use columns for sample buttons
+        st.markdown('<div class="sample-wrap">', unsafe_allow_html=True) # Mimic sample-wrap
         col_samples = st.columns(len(DEMO_DICT))
         for i, word in enumerate(DEMO_DICT):
             hash_val = hash_password_sha1(word)
             col_samples[i].button(
                 label=word, 
                 key=f"sample_btn_{word}", 
-                on_on_click=set_hash, 
-                args=(hash_val,)
+                on_click=set_hash, 
+                args=(hash_val,),
             )
+        st.markdown('</div>', unsafe_allow_html=True)
 
-# Panel 3: Crack the Password
-with st.container():
-    st.subheader("Step 3: Crack the Password")
-    st.markdown("<p class='subtitle'>Enter a hash or select from above, then look it up in the rainbow table:</p>", unsafe_allow_html=True)
+    # Panel 3: Crack the Password
+    with st.container():
+        st.subheader("Step 3: Crack the Password")
+        st.markdown("<p class='subtitle'>Enter a hash or select from above, then look it up in the rainbow table:</p>", unsafe_allow_html=True)
 
-    col_input, col_crack = st.columns([3, 1])
-    with col_input:
-        target_hash_input = st.text_input(
-            label="Target Hash", 
-            value=st.session_state.target_hash, 
-            key="hash_input_field", 
-            label_visibility="collapsed",
-            placeholder="Enter hash manually (40 hex characters)"
-        )
-    
-    with col_crack:
-        def crack_callback():
-            # Update the session state hash from the input field before cracking
-            st.session_state.target_hash = st.session_state.hash_input_field
-            
-        crack_button = st.button(
-            label="Set Hash & Crack", 
-            key="crack_btn_2",
-            on_click=crack_callback
-        )
-
-    # Crack Result
-    if crack_button and st.session_state.target_hash and st.session_state.rainbow_table:
-        st.markdown("---")
-        with st.spinner('Working…'):
-            time.sleep(0.5)
-            result = crack_hash(
-                st.session_state.target_hash, 
-                st.session_state.rainbow_table, 
-                DEMO_DICT
+        col_input, col_crack = st.columns([3, 1])
+        with col_input:
+            st.text_input(
+                label="Target Hash (40 hex characters)", 
+                value=st.session_state.target_hash, 
+                key="hash_input_field", 
+                label_visibility="collapsed",
+                placeholder="Enter hash manually (40 hex characters)"
             )
         
-        if result['found']:
-            st.success(f"🔓 **Password: {result['password']}** \n\n**Method:** {result['method']}")
-        else:
-            st.error("❌ **Not found** in demo table.")
+        with col_crack:
+            st.button(
+                label="Crack Hash", 
+                key="crack_btn_key_final",
+                on_click=crack_callback
+            )
+        
+        # Crack Result Output Panel (Mimic result-panel)
+        if st.session_state.crack_result:
+            result = st.session_state.crack_result
             
-        st.markdown(f"**Target Hash:** `{st.session_state.target_hash}`")
-        st.markdown("---")
+            # Use specific CSS for success/danger output
+            if result['style'] == 'success':
+                st.markdown(f'<div class="panel result-panel"><strong style="color:var(--success);">{result["message"]}</strong></div>', unsafe_allow_html=True)
+            elif result['style'] == 'error':
+                st.markdown(f'<div class="panel result-panel"><strong style="color:var(--danger);">{result["message"]}</strong></div>', unsafe_allow_html=True)
+            else: # Info/Muted
+                 st.markdown(f'<div class="panel result-panel"><strong style="color:var(--muted);">{result["message"]}</strong></div>', unsafe_allow_html=True)
 
-# Panel 4: Table Preview
-if st.session_state.rainbow_table:
-    with st.container():
-        st.markdown("💡 **How it works:** A rainbow table is a precomputed database of hashes. Instead of trying millions of passwords, we instantly look up the hash to find the match. Real tables contain billions of hashes for faster password cracking.", unsafe_allow_html=True)
+
+    # Panel 4: Info and Table Preview
+    st.markdown('<div class="stContainer" style="border-style:dashed;">', unsafe_allow_html=True)
+    st.markdown("💡 **How it works:** A rainbow table is a precomputed database of hashes. Instead of trying millions of passwords, we instantly look up the hash to find the match. Real tables contain billions of hashes for faster password cracking.", unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
     
     with st.container():
         st.markdown("<strong>Table Preview</strong>", unsafe_allow_html=True)
-        # Convert to DataFrame for better table rendering
+        # Display table within a container to mimic the table-wrap
         df_table = pd.DataFrame(st.session_state.rainbow_table)
-        st.dataframe(df_table, use_container_width=True)
+        st.markdown('<div class="table-wrap">', unsafe_allow_html=True)
+        st.dataframe(df_table, use_container_width=True, height=250)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-st.divider()
+st.markdown('</div>', unsafe_allow_html=True) # Close section padding div
+st.markdown('<hr style="border-top: 1px solid rgba(255,255,255,.06); margin: 0;">', unsafe_allow_html=True) # Separator
+
 
 # ----------------- CODE SECTION -----------------
-st.markdown('<a name="code"></a>', unsafe_allow_html=True)
-st.markdown('<p class="section-title">Core Code</p>', unsafe_allow_html=True)
+st.markdown('<a id="code"></a>', unsafe_allow_html=True)
+st.markdown('<div style="padding: 64px 0;">', unsafe_allow_html=True) # Mimic section padding
+st.markdown('<h2 class="section-title">Core Code</h2>', unsafe_allow_html=True)
 
 with st.container():
     st.subheader("Reference Implementation (Python)")
@@ -433,6 +498,7 @@ with st.container():
     st.code(
         """
 #Generate Test Hash 
+
 import hashlib
 
 def hash_password(password):
@@ -440,7 +506,10 @@ def hash_password(password):
         password.encode()
     ).hexdigest()
 
+
 #Crack the Password
+
+
 def crack_hash(target_hash, rainbow_table):
     for password, hash_value in rainbow_table.items():
         if hash_value == target_hash:
@@ -450,21 +519,26 @@ def crack_hash(target_hash, rainbow_table):
         language="python"
     )
 
-st.divider()
+st.markdown('</div>', unsafe_allow_html=True) # Close section padding div
+st.markdown('<hr style="border-top: 1px solid rgba(255,255,255,.06); margin: 0;">', unsafe_allow_html=True) # Separator
+
 
 # ----------------- CONCLUSION SECTION -----------------
-st.markdown('<a name="conclusion"></a>', unsafe_allow_html=True)
-st.markdown('<p class="section-title">Conclusion</p>', unsafe_allow_html=True)
+st.markdown('<a id="conclusion"></a>', unsafe_allow_html=True)
+st.markdown('<div style="padding: 64px 0;">', unsafe_allow_html=True) # Mimic section padding
+st.markdown('<h2 class="section-title">Conclusion</h2>', unsafe_allow_html=True)
 
 with st.container():
     st.subheader("Summary & Recommendations")
     st.markdown(
         """
         <p class="subtitle">
-        Rainbow table attacks demonstrate how easily weak and unsalted password hashes can be reversed using precomputed lookup tables. To protect systems, always store passwords with unique per-user salts and a slow, memory-hard hashing algorithm (for example **bcrypt**, **scrypt**, or **Argon2**). Enforce strong password policies, enable multi-factor authentication, and monitor for suspicious activity — these measures together greatly reduce the risk of hash-based attacks and strengthen overall password security.
+        Rainbow table attacks demonstrate how easily weak and unsalted password hashes can be reversed using precomputed lookup tables. To protect systems, always store passwords with unique per-user salts and a slow, memory-hard hashing algorithm (for example bcrypt, scrypt, or Argon2). Enforce strong password policies, enable multi-factor authentication, and monitor for suspicious activity — these measures together greatly reduce the risk of hash-based attacks and strengthen overall password security.
         </p>
         """, unsafe_allow_html=True
     )
 
+st.markdown('</div>', unsafe_allow_html=True) # Close section padding div
+
 # Footer
-st.caption("© 2024 Rainbow Table Attack – Educational use only.")
+st.markdown('<footer style="padding: 40px 0; color: var(--muted); border-top: 1px solid rgba(255,255,255,.06);">© 2024 Rainbow Table Attack – Educational use only.</footer>', unsafe_allow_html=True)
